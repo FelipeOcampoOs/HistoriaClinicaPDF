@@ -22,7 +22,7 @@ def build_extra_page(page_size, firma_text, fecha_text, paginas_text) -> bytes:
     y = h - margin
 
     c.setFont("Helvetica-Bold", 22)
-    c.drawString(margin, y, "Hoja de datos")
+    c.drawString(margin, y, "Certificado de copia")
     y -= 40
 
     c.setFont("Helvetica", 14)
