@@ -7,6 +7,12 @@ from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 
+MESES = {
+    "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
+    "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
+    "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic"
+}
+
 st.set_page_config(page_title="Añadir hoja", page_icon="📄")
 st.title("📄 Historia Clínica")
 
@@ -82,7 +88,10 @@ if uploaded:
             extra_bytes = build_extra_page(
                 (w, h),
                 firma_text=firma,
-                fecha_text=fecha_sel.strftime("%Y-%m-%d"),
+                fecha_str = fecha_sel.strftime("%d/%m/%Y")
+                dia, mes, anio = fecha_str.split("/")
+                mes_abrev = MESES[mes]
+                fecha_formateada = f"{dia}/{mes_abrev}/{anio}",
                 paginas_text=paginas_texto.strip() or str(num_pages_original),
             )
 
