@@ -7,6 +7,7 @@ from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 
+# Diccionario para abreviaciones en español
 MESES = {
     "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
     "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
@@ -83,15 +84,18 @@ if uploaded:
 
     if st.button("Generar PDF con hoja final", type="primary"):
         try:
+            # Formatear fecha como Día/Mes/Año con mes abreviado
+            fecha_str = fecha_sel.strftime("%d/%m/%Y")
+            dia, mes, anio = fecha_str.split("/")
+            mes_abrev = MESES.get(mes, mes)
+            fecha_formateada = f"{dia}/{mes_abrev}/{anio}"
+
             # Construir página adicional
             w, h = get_last_page_size(reader)
             extra_bytes = build_extra_page(
                 (w, h),
                 firma_text=firma,
-                fecha_str = fecha_sel.strftime("%d/%m/%Y")
-                dia, mes, anio = fecha_str.split("/")
-                mes_abrev = MESES[mes]
-                fecha_formateada = f"{dia}/{mes_abrev}/{anio}",
+                fecha_text=fecha_formateada,
                 paginas_text=paginas_texto.strip() or str(num_pages_original),
             )
 
