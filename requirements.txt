@@ -2,4 +2,3 @@ streamlit
 pypdf
 reportlab
 requests
-streamlit-hcaptcha
