@@ -1,13 +1,12 @@
 import os
+import random
 from io import BytesIO
 from datetime import date
 
 import streamlit as st
-import streamlit.components.v1 as components
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
-import requests
 
 # Diccionario para abreviaciones en español
 MESES = {
@@ -16,108 +15,68 @@ MESES = {
     "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic"
 }
 
-# Configuración de la página
 st.set_page_config(page_title="Añadir hoja", page_icon="📄")
 st.title("📄 Archivo")
 
-# --- reCAPTCHA: HTML widget que retorna el token a Python ---
-def recaptcha_widget():
-    """
-    Renderiza el reCAPTCHA v2 (checkbox) y retorna el token cuando el usuario lo resuelve.
-    Requiere RECAPTCHA_SITE_KEY en st.secrets o variable de entorno.
-    """
-    site_key = "6LeIffMrAAAAAEPA2Li90eU-nFNz4WX7WiaIXbfZ"
-    if not site_key:
-        st.sidebar.warning("⚠️ Falta RECAPTCHA_SITE_KEY en Secrets o variables de entorno.")
-        return None
+def init_math_captcha():
+    if "captcha_a" not in st.session_state:
+        st.session_state.captcha_a = random.randint(10, 99)
+        st.session_state.captcha_b = random.randint(1, 9)
 
-    html_code = f"""
-    <div id="recaptcha" style="transform:scale(1);transform-origin:0 0;"></div>
-    <script>
-      var recaptcha_loaded = false;
-      function onloadCallback() {{
-        if (recaptcha_loaded) return;
-        recaptcha_loaded = true;
-        grecaptcha.render('recaptcha', {{
-          'sitekey': '{site_key}',
-          'callback': function(token) {{
-            // Enviar el token a Streamlit (components.html devuelve este valor)
-            if (window.parent && window.parent.Streamlit) {{
-              window.parent.Streamlit.setComponentValue(token);
-            }}
-          }}
-        }});
-      }}
-    </script>
-    <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
-    """
-    # El valor retornado será el "token" cuando el usuario resuelve el captcha
-    token = components.html(html_code, height=90)
-    return token
+def render_math_captcha():
+    init_math_captcha()
+    a = st.session_state.captcha_a
+    b = st.session_state.captcha_b
+    st.sidebar.write(f"Resuelve: **{a} + {b} = ?**")
+    return st.sidebar.text_input("Respuesta CAPTCHA", key="captcha_answer")
 
-def verify_recaptcha(token: str) -> bool:
-    """Verifica el token de reCAPTCHA v2 con Google."""
-    secret = "6LeIffMrAAAAAGFfb7cmZd4HVr3qG27kNLfcGGo1"
-    if not secret:
-        st.sidebar.warning("⚠️ Falta RECAPTCHA_SECRET_KEY en Secrets o variables de entorno.")
-        return False
-    if not token:
-        return False
-    try:
-        resp = requests.post(
-            "https://www.google.com/recaptcha/api/siteverify",
-            data={"secret": secret, "response": token},
-            timeout=5
-        )
-        data = resp.json()
-        return bool(data.get("success"))
-    except Exception as e:
-        st.sidebar.error(f"No se pudo verificar el reCAPTCHA: {e}")
-        return False
+def reset_math_captcha():
+    for k in ["captcha_a", "captcha_b", "captcha_answer"]:
+        if k in st.session_state:
+            del st.session_state[k]
 
-# Función de autenticación
 def authenticate():
-    """Autenticación básica + reCAPTCHA v2."""
+    """Login básico + CAPTCHA matemático."""
     username = "usuario"
     password = "contraseña123"
 
     st.sidebar.subheader("Iniciar sesión")
     input_user = st.sidebar.text_input("Nombre de usuario", "")
     input_password = st.sidebar.text_input("Contraseña", type="password")
-
-    # Widget reCAPTCHA (devuelve token cuando se resuelve)
-    token = recaptcha_widget()
+    ans = render_math_captcha()
 
     do_login = st.sidebar.button("Entrar", type="primary")
-
     if do_login:
         if input_user == username and input_password == password:
-            if token and verify_recaptcha(token):
-                st.sidebar.success("✅ Autenticado correctamente")
-                return True
-            else:
-                st.sidebar.error("❌ Verifica el CAPTCHA para continuar.")
+            try:
+                if int(ans) == (st.session_state.captcha_a + st.session_state.captcha_b):
+                    st.sidebar.success("✅ Autenticado correctamente")
+                    reset_math_captcha()
+                    return True
+                else:
+                    st.sidebar.error("❌ CAPTCHA incorrecto.")
+                    reset_math_captcha()
+                    return False
+            except Exception:
+                st.sidebar.error("❌ Ingresa un número válido en el CAPTCHA.")
+                reset_math_captcha()
                 return False
         else:
             st.sidebar.error("❌ Usuario o contraseña incorrectos.")
             return False
-
     return False
 
-# Comprobamos si el usuario está autenticado
 authenticated = authenticate()
 
-# Si el usuario está autenticado, se muestra el contenido principal
 if authenticated:
     uploaded = st.file_uploader("Sube tu PDF", type=["pdf"])
 
     def build_extra_page(page_size, firma_text, fecha_text, paginas_text) -> bytes:
-        """Genera una página PDF (bytes) con los campos solicitados."""
         w, h = page_size
         buf = BytesIO()
         c = canvas.Canvas(buf, pagesize=(w, h))
 
-        margin = 36  # ~0.5"
+        margin = 36
         y = h - margin
 
         c.setFont("Helvetica-Bold", 22)
@@ -135,7 +94,6 @@ if authenticated:
         return buf.read()
 
     def get_last_page_size(reader) -> tuple[float, float]:
-        """Obtiene el tamaño (w, h) de la última página, o A4 si falla."""
         try:
             last = reader.pages[-1]
             return float(last.mediabox.width), float(last.mediabox.height)
