@@ -37,8 +37,13 @@ def authenticate():
         return False
     return False
 
-# Verificación de autenticación
-if authenticate():
+# Comprobamos si el usuario está autenticado
+authenticated = authenticate()
+
+# Si el usuario está autenticado, se muestra el contenido principal
+if authenticated:
+    # Aquí va el contenido principal (subida de PDF, campos para generar PDF, etc.)
+
     uploaded = st.file_uploader("Sube tu PDF", type=["pdf"])
 
     def build_extra_page(page_size, firma_text, fecha_text, paginas_text) -> bytes:
@@ -156,3 +161,4 @@ if authenticate():
         st.info("Sube un PDF para comenzar.")
 else:
     st.info("Debes iniciar sesión para acceder al contenido.")
+
