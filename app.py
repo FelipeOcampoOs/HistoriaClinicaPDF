@@ -16,7 +16,7 @@ MESES = {
 
 # Configuración de la página
 st.set_page_config(page_title="Añadir hoja", page_icon="📄")
-st.title("📄 Historia Clínica")
+st.title("📄 Archivo")
 
 # Función de autenticación
 def authenticate():
