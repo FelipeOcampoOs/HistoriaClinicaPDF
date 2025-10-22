@@ -26,7 +26,7 @@ def recaptcha_widget():
     Renderiza el reCAPTCHA v2 (checkbox) y retorna el token cuando el usuario lo resuelve.
     Requiere RECAPTCHA_SITE_KEY en st.secrets o variable de entorno.
     """
-    site_key = st.secrets.get("RECAPTCHA_SITE_KEY") or os.getenv("RECAPTCHA_SITE_KEY")
+    site_key = "6LeIffMrAAAAAEPA2Li90eU-nFNz4WX7WiaIXbfZ"
     if not site_key:
         st.sidebar.warning("⚠️ Falta RECAPTCHA_SITE_KEY en Secrets o variables de entorno.")
         return None
@@ -57,7 +57,7 @@ def recaptcha_widget():
 
 def verify_recaptcha(token: str) -> bool:
     """Verifica el token de reCAPTCHA v2 con Google."""
-    secret = st.secrets.get("RECAPTCHA_SECRET_KEY") or os.getenv("RECAPTCHA_SECRET_KEY")
+    secret = "6LeIffMrAAAAAGFfb7cmZd4HVr3qG27kNLfcGGo1"
     if not secret:
         st.sidebar.warning("⚠️ Falta RECAPTCHA_SECRET_KEY en Secrets o variables de entorno.")
         return False
