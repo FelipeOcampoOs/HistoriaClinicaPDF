@@ -8,15 +8,20 @@ from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 
+# --- Config de página (debe ir muy arriba) ---
+st.set_page_config(page_title="Añadir hoja", page_icon="📄")
+st.title("📄 Archivo")
+
+# --- Estado inicial ---
+if "auth_ok" not in st.session_state:
+    st.session_state.auth_ok = False
+
 # Diccionario para abreviaciones en español
 MESES = {
     "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
     "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
     "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic"
 }
-
-st.set_page_config(page_title="Añadir hoja", page_icon="📄")
-st.title("📄 Archivo")
 
 def init_math_captcha():
     if "captcha_a" not in st.session_state:
@@ -36,7 +41,16 @@ def reset_math_captcha():
             del st.session_state[k]
 
 def authenticate():
-    """Login básico + CAPTCHA matemático."""
+    """Login básico + CAPTCHA matemático con estado persistente."""
+    # Si ya está autenticado, no muestres el formulario otra vez
+    if st.session_state.get("auth_ok", False):
+        st.sidebar.success("✅ Autenticado")
+        if st.sidebar.button("Cerrar sesión"):
+            for k in ("auth_ok", "captcha_a", "captcha_b", "captcha_answer"):
+                st.session_state.pop(k, None)
+            st.rerun()
+        return True
+
     username = "usuario"
     password = "contraseña123"
 
@@ -50,8 +64,10 @@ def authenticate():
         if input_user == username and input_password == password:
             try:
                 if int(ans) == (st.session_state.captcha_a + st.session_state.captcha_b):
-                    st.sidebar.success("✅ Autenticado correctamente")
+                    st.session_state.auth_ok = True
                     reset_math_captcha()
+                    st.sidebar.success("✅ Autenticado correctamente")
+                    st.rerun()  # redibuja ya logueado
                     return True
                 else:
                     st.sidebar.error("❌ CAPTCHA incorrecto.")
@@ -68,6 +84,9 @@ def authenticate():
 
 authenticated = authenticate()
 
+# -------------------
+# Lógica principal
+# -------------------
 if authenticated:
     uploaded = st.file_uploader("Sube tu PDF", type=["pdf"])
 
@@ -100,7 +119,9 @@ if authenticated:
         except Exception:
             return A4
 
-    if uploaded:
+    if not uploaded:
+        st.info("Sube un PDF para comenzar.")
+    else:
         pdf_bytes = uploaded.getvalue()
         try:
             reader = PdfReader(BytesIO(pdf_bytes))
@@ -150,6 +171,7 @@ if authenticated:
                 extra_reader = PdfReader(BytesIO(extra_bytes))
                 writer.add_page(extra_reader.pages[0])
 
+                # Intenta conservar metadatos
                 try:
                     if reader.metadata:
                         writer.add_metadata(reader.metadata)
@@ -172,7 +194,5 @@ if authenticated:
                 )
             except Exception as e:
                 st.error(f"❌ Ocurrió un error al generar el PDF: {e}")
-    else:
-        st.info("Sube un PDF para comenzar.")
 else:
     st.info("Debes iniciar sesión para acceder al contenido.")
