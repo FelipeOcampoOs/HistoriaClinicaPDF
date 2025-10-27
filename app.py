@@ -51,8 +51,8 @@ def authenticate():
             st.rerun()
         return True
 
-    username = "usuario"
-    password = "contraseña123"
+    username = "fvlcic"
+    password = "fvlcic2025"
 
     st.sidebar.subheader("Iniciar sesión")
     input_user = st.sidebar.text_input("Nombre de usuario", "")
